@@ -6,12 +6,12 @@ require('dotenv').config();
 
 const app = express();
 
-// --- MIDDLEWARES (Configuraciones) ---
-app.use(cors()); // Permite peticiones desde el frontend
-app.use(express.json()); // Permite leer JSON en las peticiones
-app.use(express.static('public')); // Sirve automáticamente tu index.html desde la carpeta /public
+// --- MIDDLEWARES (Configuration) ---
+app.use(cors()); // Allow requests from frontend
+app.use(express.json()); // Allow reading JSON in requests
+app.use(express.static('public')); // Automatically serve index.html from public folder
 
-// --- 1. CONFIGURACIÓN DE POSTGRES ---
+// --- 1. POSTGRES CONFIGURATION ---
 const pool = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
@@ -20,29 +20,29 @@ const pool = new Pool({
     port: process.env.DB_PORT,
 });
 
-// Probar conexión al iniciar
+// Test connection at startup
 pool.connect((err, client, release) => {
     if (err) {
-        return console.error('❌ Error adquiriendo el cliente de la DB', err.stack);
+        return console.error('❌ Error acquiring database client', err.stack);
     }
-    console.log('✅ Conexión a Postgres establecida con éxito');
+    console.log('✅ PostgreSQL connection established successfully');
     release();
 });
 
-// --- 2. RUTAS DE LA API ---
+// --- 2. API ROUTES ---
 
-// Obtener todos los usuarios (READ)
+// Get all users (READ)
 app.get('/api/usuarios', async (req, res) => {
     try {
         const resultado = await pool.query('SELECT * FROM usuarios ORDER BY id ASC');
         res.json(resultado.rows);
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ error: "Error al consultar la base de datos" });
+        res.status(500).json({ error: "Error querying the database" });
     }
 });
 
-// Crear usuario (CREATE)
+// Create user (CREATE)
 app.post('/api/usuarios', async (req, res) => {
     const { nombre, rol } = req.body;
     try {
@@ -53,11 +53,11 @@ app.post('/api/usuarios', async (req, res) => {
         res.status(201).json(nuevoUsuario.rows[0]);
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ error: "Error al insertar en la base de datos" });
+        res.status(500).json({ error: "Error inserting into database" });
     }
 });
 
-// Actualizar usuario (UPDATE)
+// Update user (UPDATE)
 app.put('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     const { nombre, rol } = req.body;
@@ -72,20 +72,20 @@ app.put('/api/usuarios/:id', async (req, res) => {
     }
 });
 
-// Eliminar usuario (DELETE)
+// Delete user (DELETE)
 app.delete('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
-        res.json({ mensaje: `Usuario con id ${id} eliminado correctamente` });
+        res.json({ message: `User with id ${id} successfully deleted` });
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ error: "Error al eliminar" });
+        res.status(500).json({ error: "Error deleting" });
     }
 });
 
-// --- 3. LANZAR EL SERVIDOR ---
+// --- 3. START SERVER ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`✅ API corriendo en http://localhost:${PORT}`);
+    console.log(`✅ API running at http://localhost:${PORT}`);
 });
