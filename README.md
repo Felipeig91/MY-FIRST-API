@@ -5,6 +5,7 @@ Este documento contiene la guía completa, el código fuente y las instrucciones
 ---
 
 ## 📂 1. ESTRUCTURA DEL PROYECTO
+
 Crea una carpeta llamada `mi-primera-api` y organiza los archivos de la siguiente manera:
 
 ```text
@@ -15,3 +16,5 @@ mi-primera-api/
 ├── index.js            # Código principal de la API
 ├── package.json        # Configuración y dependencias
 └── README.md           # Este documento
+/
+```
