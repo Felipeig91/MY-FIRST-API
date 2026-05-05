@@ -1,14 +1,17 @@
 const express = require('express');
 const { Pool } = require('pg');
+const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
-// Middleware para procesar JSON en las peticiones
-app.use(express.json());
+// --- MIDDLEWARES (Configuraciones) ---
+app.use(cors()); // Permite peticiones desde el frontend
+app.use(express.json()); // Permite leer JSON en las peticiones
+app.use(express.static('public')); // Sirve automáticamente tu index.html desde la carpeta /public
 
-// 1. CONFIGURACIÓN DE LA CONEXIÓN A POSTGRES
-// Los datos se extraen automáticamente de tu archivo .env
+// --- 1. CONFIGURACIÓN DE POSTGRES ---
 const pool = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
@@ -26,12 +29,9 @@ pool.connect((err, client, release) => {
     release();
 });
 
-// 2. RUTA DE INICIO
-app.get('/', (req, res) => {
-    res.send('🚀 Servidor de práctica conectado a Postgres funcionando.');
-});
+// --- 2. RUTAS DE LA API ---
 
-// 3. OBTENER USUARIOS (READ) - Viene de la tabla 'usuarios'
+// Obtener todos los usuarios (READ)
 app.get('/api/usuarios', async (req, res) => {
     try {
         const resultado = await pool.query('SELECT * FROM usuarios ORDER BY id ASC');
@@ -42,7 +42,7 @@ app.get('/api/usuarios', async (req, res) => {
     }
 });
 
-// 4. CREAR USUARIO (CREATE) - Guarda en la tabla 'usuarios'
+// Crear usuario (CREATE)
 app.post('/api/usuarios', async (req, res) => {
     const { nombre, rol } = req.body;
     try {
@@ -57,7 +57,22 @@ app.post('/api/usuarios', async (req, res) => {
     }
 });
 
-// 5. ELIMINAR USUARIO (DELETE)
+// Actualizar usuario (UPDATE)
+app.put('/api/usuarios/:id', async (req, res) => {
+    const { id } = req.params;
+    const { nombre, rol } = req.body;
+    try {
+        const actualizado = await pool.query(
+            'UPDATE usuarios SET nombre = $1, rol = $2 WHERE id = $3 RETURNING *',
+            [nombre, rol, id]
+        );
+        res.json(actualizado.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Eliminar usuario (DELETE)
 app.delete('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -69,22 +84,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     }
 });
 
-// ACTUALIZAR ROL DE USUARIO
-app.put('/api/usuarios/:id', async (req, res) => {
-    const { id } = req.params;
-    const { rol } = req.body;
-    try {
-        const actualizado = await pool.query(
-            'UPDATE usuarios SET rol = $1 WHERE id = $2 RETURNING *',
-            [rol, id]
-        );
-        res.json(actualizado.rows[0]);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 6. LANZAR EL SERVIDOR
+// --- 3. LANZAR EL SERVIDOR ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`✅ API corriendo en http://localhost:${PORT}`);
